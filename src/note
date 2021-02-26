@@ -1,0 +1,295 @@
+npx create-react-app .
+npx -> runs instead downloading command. .-> means the current directory we are in
+npm start to developt project
+npm run build to build production
+
+
+public>>index.html has only one div id=root
+which is going to be used for when react runs our code and sends it to root
+
+we use src folder
+in app.js we return (
+    <OurComponent />
+)
+
+
+the component return block can't return two separeted elements, elements must be wrapped inside an empty tag <> </> which is called a fragment.
+it allows us to return one thing, which has two elements inside OurComponent and an input tag.
+extra tags can be added, ex: buttons Add Todo button Clear Complete 
+
+THE WAY REACT WORKS IS MANAGING THE STATE INSIDE YOUR APPLICATION
+WHEN THAT STATE CHANGES, REACT WILL RE-RENDER STUFF FOR US
+store all our todos inside state so it will reender entire component anytime we delete update or add a new todo
+define default state right after component name 
+funciton OurComponent() {
+    useState([]) // empty array of todos when our app first loads
+    //useState returns an Array so we can destructure that array and set it equal to useState
+    so const[todos, setTodos ]  = useState([]);
+    //setTodos is function to update our todos
+    //todos is all todos set inside useState
+    whatever is defined inside useState(['']) can be passed down as props
+    ex: <TodoList todos = {todos} />> 
+    call it inside export default ourComponent ({todos}){
+        return (
+            div
+            {todos.length}
+            //brackets so it recognizes js
+            /div
+        )
+    }
+}
+
+****create a TODO component to map over todolist and print out each item
+
+inside todolist map over todos and for each todo we want to return todo component passing todo as prop
+return(
+    todos.map(todo =>{
+        return <Todo todo={todo} />>
+    }
+
+    )
+)
+
+***inside our Todo component
+we return (
+    div
+    {todo}
+    /div
+)
+
+PS: EACH CHILD IN A LIST MUST HAVE A UNIQUE KEY PROP. so react can know which ones that changed
+so solve it by adding key={todo}
+that way it allows react to only rerender  or change the ones that changed inside the array instead of rerendering everything
+
+
+
+
+
+we cant just store the name of our todo.
+we must store an object wether or not it is completed. with an id aswell as a name
+
+ex:
+add inside app in useState([{id:1, name:'Todo 1', complete:false }])
+
+that way, we can use todo.id as key inside todolist.
+
+
+and inside todo component we want {todo.name}
+
+
+inside todo we want to set a checkbox so it can be checked when a todo is completed
+so set div
+label
+an input with checkbox type and checked={todo.complete}
+{todo.name}
+/label/div
+
+
+add.justadd event listener click  on addtodo button
+onClick={handleAddTodo} //this function will be created on same file, but before return()
+
+event is going to take that event property 
+we need to set our todos to a new todoso we get our old todos and add the new todo
+and set our todos to that todolist
+we must use useRef allows us to referente elements inside our html(input in this case)
+
+--> so inside input ref={todoNameRef}
+
+-->define const todoNameRef = useRef()
+
+function handleAddTodo(e){
+//now to access that ref we must call it with current, which is going to be w/e element we are currently referencing
+//.value is going to give us input value
+const name = todoNameRef.current.value
+
+if(name === '' ) return 
+//check wether its an empty string so we dont add an empty todo
+console.log(name)
+//also set todoNameRef.current.value = null that way whenever we add a todo, the input textarea gets cleared
+
+}
+
+still inside handleAddTodo 
+real change we need to make is setting our todos
+we can set it two different ways
+you could just pass it a value or an empty array which would clear all our todos
+setTodos([])
+or you can use the previous value
+in our case prevTodos 
+which is a function that will give us our previous todos and allows us to change that
+
+setTodos( prevTodos => {
+//spread previous todos and add an todo as object
+return[...prevTodos, { id: 1, name: name, complete: false}]
+})
+
+problem is every todo is going to use the same key, which throws an error
+we could use a library
+npm i uuid
+and import inside our appl
+import uuidv4 from 'uuid/v4'
+now insite prevTodos return, set id: uuidv4(),
+
+
+***we need to store our todos inside localstorage, otherwise everytime we reload page, todolist gets cleaned
+we can fix it by using useEffect which is another Hook inside react
+
+it is just a function that will take as first parameter another function and that is the function we want to do things
+every single time smething changes we want to call that first function
+the way we determine when to call that function is we pass an array of properties
+which is going to be our dependencies
+so anytime something in that arry changes we want to use useEffecxt
+so anytime our array of todos changes, we want to save our todos
+save them to local storage
+give a key to it
+before app component
+const LOCAL_STORAGE_KEY ='todoApp.todos'
+
+now inside useEffect => {
+//make sure we pass it as string, so stringify it
+localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos)}, [todos])
+
+one useEffect to save todos to local storage, now we need another useEffect to load our todos
+we only want to call it once right when our component loads
+so we pass it an empty array, that way it will never change so it will only load once
+
+we want to set setTodos to what we get back from our storedTodos
+ONLY IF we have storedTodos
+if we have storedTodos, we set it to setTodos
+
+
+useEffect(() => {
+
+const storedTodos = localStorage.getItem(LOCAL_STORAGE_KEY)
+its an string, we must parse it to convert it to an array
+const storedTodos = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY))
+if (storedTodos) setTodos(storedTodos)
+}, [])
+
+
+
+
+
+
+
+
+NOW, we need a function to set our completed checkbox to true or false
+need a function with the id of the todo we want to toggle
+
+function toggleTodo(id){
+const newTodos = [...todos]
+get a copy of our current todos so we dont change our current list of todos
+**INREACT WE MUST NEVER MODIFY A STATE VARIABLE, WE MUST CREATE A COPY AND THEN SET THAT COPY to new state
+now get the todo we are trying to modify by using finding the todo is equal to todo.id
+const todo = newTodos.find(todo => todo.id === id)
+//set it to the opposite of its current complete
+
+todo.complete = !todo.complete
+//set our todos to the new todos
+setTodos(newTodos)
+
+
+
+now we need to pass down our function to our todo 
+
+because todo is referenced inside our todolist
+which is referenced inside our app
+
+so we need to pass toggleTodo down to <TodoList todos={todo}
+toggleTodo={toggleTodo} /> insde app
+
+then inside our list 
+we import that toggle TodoList({ todos, toggleTodo}) and pass it down to individual todos
+return <todo key = { todo.id} toggleTodo = {toggleTodo} todo={todo}
+
+so inside our todo we also import toggleTodo 
+and inside our input we want to set a onChange function, but we cant pass toggleTodo beacuse we must get an id, so we must set a function inside todo
+onChange={handleTodoClick}
+
+create that function and all we need to do is call toffleTodo and pass an id
+
+handleTodoClick(){
+toggleTodo(todo.id)
+}
+
+whats happening:
+everytime we click, its calling onChange
+which is calling toddleTodo with the id of the todo we are inside of
+then it gets passed down to todolist
+that gets passed down to app
+which calls our toggletodo 
+which resets our todo list variable to the new list of todos
+with the todo checked that we clicked on
+
+simple ToDo 
+Has to have:
+ input to write new todo
+ button to add new todo and insert it to array
+ checkbox(?) option to check completed tasks
+ each todo has to have name, id and isCompleted
+
+use Hooks : useState, useRef, useEffect
+
+useRef :
+- allows elements to be referenced inside html
+- to use it, a variable needs to be set equal to useRef();
+-that variable needs to be set as property inside html element that will be referenced.
+-in this case, input name is going to be referenced.
+
+3 Components 
+
+at App Component:
+
+-> use TodoList Component and pass down toggle function and todos as props
+    -todoList lists down every todo inserted
+
+-> create default state using useState:
+   todos =  list of todos inserted inside state
+   setTodos = function to update todos in case add/delete
+ 
+ *useState returns an Array so we need to destructure it 
+
+-> new Task is written in input
+    - its value is referenced in order to grab task name 
+    - get a click event Listener into the Add button 
+
+-> add button gets clicked, invoke a function to handle add, pass event as param:
+     - grab current value of the referenced element and put it in a variable(name) for easy access
+        - use current so it's going to be w/e element we are currently referencing
+        - value gets the current input value;
+    - check if name has value, case empty, don't add it
+    -update setTodos
+        -  return old todos AND an object of the new todo
+            - use uuid library to set random numbers as id
+            - set todo name equals w/e was referenced in input
+            -by default, set isCompleted to false
+
+-> case clear button gets clicked:
+    -invoke function to clear completed todos
+    -filter each todo and return only todos that are not completed
+    -set setTodos equal to that filtered list of uncompleted todos
+
+
+at TodoList Component:
+    - import Todo Component 
+    -receives props(toggle event and todos) from App
+    - map over todos and for each item, call Todo Component,
+    passing an id, toggle function and the todo
+
+at Todo Component:
+    -also receives props(toggle event and todos) from TodoList
+    - add a checked property in input with todo.complete to check wether its done or not
+    - However a function is necessary, we already have toggleTodo that was created on App Component
+        we can't pass it inside input because we need an id,
+        so we need to define a function to grab its id.
+    - handleToggle function then calls toggleTodo and passes todo.id to it.
+    
+    *whats happening inside Todo input:
+        everytime we click on checkbox, it's calling onChange
+        which is calling toddleTodo with the id of the todo we are inside of
+        then it gets passed down to todolist
+        that gets passed down to app
+        which calls our toggletodo 
+        which resets our todo list variable to the new list of todos
+        with the todo checked that we clicked on
+    
